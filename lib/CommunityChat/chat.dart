@@ -90,13 +90,12 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     final isTablet = size.width > 600;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.1),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Column(
@@ -110,19 +109,25 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              '124 members online',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
+            Row(
+              children: [
+                Icon(Icons.circle, color: Color(0xFF4A9B8E), size: 10),
+                SizedBox(width: 4),
+                Text(
+                  '124 online',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black87),
+            icon: const Icon(Icons.more_horiz, color: Colors.black87),
             onPressed: () {
               _showChatOptions(context);
             },
@@ -137,7 +142,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
               controller: _scrollController,
               padding: EdgeInsets.symmetric(
                 horizontal: isTablet ? 32.0 : 16.0,
-                vertical: 16.0,
+                vertical: 20.0,
               ),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -158,21 +163,21 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     final size = MediaQuery.of(context).size;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             CircleAvatar(
-              radius: 18,
+              radius: 16,
               backgroundColor: const Color(0xFF4A9B8E),
               child: CircleAvatar(
-                radius: 16,
+                radius: 14,
                 backgroundImage: AssetImage(message['avatar']),
                 backgroundColor: Colors.grey[300],
                 onBackgroundImageError: (exception, stackTrace) {},
-                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
+                child: Icon(Icons.person, color: Colors.grey[400], size: 16),
               ),
             ),
             const SizedBox(width: 8),
@@ -195,7 +200,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   ),
                 Container(
                   constraints: BoxConstraints(
-                    maxWidth: isTablet ? 400 : size.width * 0.65,
+                    maxWidth: isTablet ? 400 : size.width * 0.7,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -204,10 +209,10 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   decoration: BoxDecoration(
                     color: isMe ? const Color(0xFF4A9B8E) : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isMe ? 16 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 16),
+                      topLeft: const Radius.circular(20),
+                      topRight: const Radius.circular(20),
+                      bottomLeft: Radius.circular(isMe ? 20 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 20),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -221,7 +226,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                     message['message'],
                     style: TextStyle(
                       color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 14,
+                      fontSize: 15,
                       height: 1.4,
                     ),
                   ),
@@ -231,28 +236,15 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   child: Text(
                     message['time'],
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          if (isMe) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF4A9B8E),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundImage: AssetImage(message['avatar']),
-                backgroundColor: Colors.grey[300],
-                onBackgroundImageError: (exception, stackTrace) {},
-                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -262,7 +254,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 32.0 : 16.0,
-        vertical: 12.0,
+        vertical: 16.0,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -270,31 +262,37 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: const Offset(0, -5),
           ),
         ],
       ),
       child: SafeArea(
         child: Row(
           children: [
-            IconButton(
-              icon: Icon(Icons.add_circle_outline, color: Colors.grey[600]),
-              onPressed: () {
-                _showAttachmentOptions(context);
-              },
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Color(0xFF4A9B8E)),
+                onPressed: () {
+                  _showAttachmentOptions(context);
+                },
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: const Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
                   controller: _messageController,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
-                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -307,15 +305,16 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF4A9B8E),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                onPressed: _sendMessage,
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4A9B8E),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
               ),
             ),
           ],
@@ -327,52 +326,56 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
   void _showAttachmentOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo, color: Color(0xFF4A9B8E)),
-              title: const Text('Photo'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.photo_library_rounded, color: Color(0xFF4A9B8E)),
+              ),
+              title: const Text('Photo Gallery'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Photo upload coming soon!'),
-                    backgroundColor: Color(0xFF4A9B8E),
-                  ),
-                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.pets, color: Color(0xFF4A9B8E)),
-              title: const Text('Share Pet'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF4A9B8E)),
+              ),
+              title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Share pet coming soon!'),
-                    backgroundColor: Color(0xFF4A9B8E),
-                  ),
-                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.location_on, color: Color(0xFF4A9B8E)),
-              title: const Text('Location'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.location_on_rounded, color: Color(0xFF4A9B8E)),
+              ),
+              title: const Text('Share Location'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Location sharing coming soon!'),
-                    backgroundColor: Color(0xFF4A9B8E),
-                  ),
-                );
               },
             ),
           ],
@@ -384,41 +387,30 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
   void _showChatOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.info_outline, color: Color(0xFF4A9B8E)),
-              title: const Text('Chat Info'),
-              onTap: () {
-                Navigator.pop(context);
-              },
+              leading: const Icon(Icons.info_outline_rounded, color: Colors.black87),
+              title: const Text('Group Info'),
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.notifications_off_outlined, color: Color(0xFF4A9B8E)),
+              leading: const Icon(Icons.notifications_off_outlined, color: Colors.black87),
               title: const Text('Mute Notifications'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Notifications muted'),
-                    backgroundColor: Color(0xFF4A9B8E),
-                  ),
-                );
-              },
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.report_outlined, color: Colors.red),
-              title: const Text('Report'),
-              onTap: () {
-                Navigator.pop(context);
-              },
+              leading: const Icon(Icons.logout_rounded, color: Colors.red),
+              title: const Text('Leave Group', style: TextStyle(color: Colors.red)),
+              onTap: () => Navigator.pop(context),
             ),
           ],
         ),
