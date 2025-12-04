@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../PetScreen.dart';
+import '../favorite.dart';
+import '../pets.dart';
+import '../profile.dart';
+import '../pet_data.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
@@ -90,13 +95,19 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     final isTablet = size.width > 600;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.1),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          },
         ),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,25 +120,19 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Row(
-              children: [
-                Icon(Icons.circle, color: Color(0xFF4A9B8E), size: 10),
-                SizedBox(width: 4),
-                Text(
-                  '124 online',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            Text(
+              '124 members online',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: Colors.black87),
+            icon: const Icon(Icons.more_vert, color: Colors.black87),
             onPressed: () {
               _showChatOptions(context);
             },
@@ -142,7 +147,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
               controller: _scrollController,
               padding: EdgeInsets.symmetric(
                 horizontal: isTablet ? 32.0 : 16.0,
-                vertical: 20.0,
+                vertical: 16.0,
               ),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -155,6 +160,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
           _buildMessageInput(isTablet),
         ],
       ),
+      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -163,21 +169,21 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     final size = MediaQuery.of(context).size;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMe) ...[
             CircleAvatar(
-              radius: 16,
+              radius: 18,
               backgroundColor: const Color(0xFF4A9B8E),
               child: CircleAvatar(
-                radius: 14,
+                radius: 16,
                 backgroundImage: AssetImage(message['avatar']),
                 backgroundColor: Colors.grey[300],
                 onBackgroundImageError: (exception, stackTrace) {},
-                child: Icon(Icons.person, color: Colors.grey[400], size: 16),
+                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
               ),
             ),
             const SizedBox(width: 8),
@@ -200,7 +206,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   ),
                 Container(
                   constraints: BoxConstraints(
-                    maxWidth: isTablet ? 400 : size.width * 0.7,
+                    maxWidth: isTablet ? 400 : size.width * 0.65,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -209,10 +215,10 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   decoration: BoxDecoration(
                     color: isMe ? const Color(0xFF4A9B8E) : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isMe ? 20 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 20),
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 16),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -226,7 +232,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                     message['message'],
                     style: TextStyle(
                       color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 15,
+                      fontSize: 14,
                       height: 1.4,
                     ),
                   ),
@@ -236,15 +242,28 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   child: Text(
                     message['time'],
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       color: Colors.grey[500],
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ],
             ),
           ),
+          if (isMe) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF4A9B8E),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundImage: AssetImage(message['avatar']),
+                backgroundColor: Colors.grey[300],
+                onBackgroundImageError: (exception, stackTrace) {},
+                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -254,7 +273,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 32.0 : 16.0,
-        vertical: 16.0,
+        vertical: 12.0,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -262,37 +281,31 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, -5),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         child: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Color(0xFF4A9B8E)),
-                onPressed: () {
-                  _showAttachmentOptions(context);
-                },
-              ),
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: Colors.grey[600]),
+              onPressed: () {
+                _showAttachmentOptions(context);
+              },
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
                   controller: _messageController,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
-                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -305,16 +318,15 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: _sendMessage,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4A9B8E),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A9B8E),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: _sendMessage,
               ),
             ),
           ],
@@ -326,56 +338,52 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
   void _showAttachmentOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.photo_library_rounded, color: Color(0xFF4A9B8E)),
-              ),
-              title: const Text('Photo Gallery'),
+              leading: const Icon(Icons.photo, color: Color(0xFF4A9B8E)),
+              title: const Text('Photo'),
               onTap: () {
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Photo upload coming soon!'),
+                    backgroundColor: Color(0xFF4A9B8E),
+                  ),
+                );
               },
             ),
             ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF4A9B8E)),
-              ),
-              title: const Text('Take Photo'),
+              leading: const Icon(Icons.pets, color: Color(0xFF4A9B8E)),
+              title: const Text('Share Pet'),
               onTap: () {
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Share pet coming soon!'),
+                    backgroundColor: Color(0xFF4A9B8E),
+                  ),
+                );
               },
             ),
             ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A9B8E).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.location_on_rounded, color: Color(0xFF4A9B8E)),
-              ),
-              title: const Text('Share Location'),
+              leading: const Icon(Icons.location_on, color: Color(0xFF4A9B8E)),
+              title: const Text('Location'),
               onTap: () {
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Location sharing coming soon!'),
+                    backgroundColor: Color(0xFF4A9B8E),
+                  ),
+                );
               },
             ),
           ],
@@ -387,31 +395,109 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
   void _showChatOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.info_outline_rounded, color: Colors.black87),
-              title: const Text('Group Info'),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.info_outline, color: Color(0xFF4A9B8E)),
+              title: const Text('Chat Info'),
+              onTap: () {
+                Navigator.pop(context);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.notifications_off_outlined, color: Colors.black87),
+              leading: const Icon(Icons.notifications_off_outlined, color: Color(0xFF4A9B8E)),
               title: const Text('Mute Notifications'),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notifications muted'),
+                    backgroundColor: Color(0xFF4A9B8E),
+                  ),
+                );
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.logout_rounded, color: Colors.red),
-              title: const Text('Leave Group', style: TextStyle(color: Colors.red)),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.report_outlined, color: Colors.red),
+              title: const Text('Report'),
+              onTap: () {
+                Navigator.pop(context);
+              },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(0xFF4A9B8E),
+          unselectedItemColor: Colors.grey[400],
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          elevation: 0,
+          currentIndex: 3, // Messages tab active
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+                break;
+              case 1:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FavoriteScreen()),
+                );
+                break;
+              case 2:
+                 Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)),
+                );
+                break;
+              case 3:
+                // Already on Messages
+                break;
+              case 4:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+                break;
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: 'Favorites'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 40, color: Color(0xFF4A9B8E)), label: 'Add'),
+            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Messages'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
           ],
         ),
       ),

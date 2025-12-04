@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'favorites_manager.dart';
-import 'favorite.dart';
+import 'pet_details.dart';
+import 'PetScreen.dart';
 import 'CommunityChat/chat.dart';
 import 'profile.dart';
+import 'favorite.dart';
+import 'pet_data.dart';
 
 class PetsScreen extends StatefulWidget {
   final List<Map<String, dynamic>> pets;
@@ -16,7 +19,6 @@ class _PetsScreenState extends State<PetsScreen> {
   // categories: use lowercase for comparison
   final List<String> categories = ['all', 'dog', 'cat', 'rabbit', 'bird'];
   String selectedCategory = 'all';
-  final FavoritesManager _favoritesManager = FavoritesManager();
 
   List<Map<String, dynamic>> get filteredPets {
     if (selectedCategory == 'all') return widget.pets;
@@ -43,42 +45,35 @@ class _PetsScreenState extends State<PetsScreen> {
     final isTablet = size.width > 600;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(context),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCategoryChips(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Expanded(
               child: filteredPets.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.pets, size: 60, color: Colors.grey[300]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No pets found',
-                            style: TextStyle(color: Colors.grey[500], fontSize: 16),
-                          ),
-                        ],
+                      child: Text(
+                        'No pets found',
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.zero,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: isTablet ? 3 : 2,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 20,
-                        childAspectRatio: 0.72,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.75,
                       ),
                       itemCount: filteredPets.length,
                       itemBuilder: (context, index) {
                         return _buildPetCard(filteredPets[index]);
+
                       },
                     ),
             ),
@@ -90,49 +85,40 @@ class _PetsScreenState extends State<PetsScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    // Match HomeScreen app bar style: menu icon and profile avatar
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black87),
-                  onPressed: () => Navigator.pop(context),
+              IconButton(
+                icon: const Icon(Icons.menu, size: 28, color: Colors.black87),
+                onPressed: () {
+                  // keep same behavior as HomeScreen (no change)
+                },
+              ),
+              const Spacer(),
+              const Text(
+                'Pets',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Available Pets',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: const Color(0xFF4A9B8E),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundImage: const AssetImage('assets/profile.jpg'),
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: const Color(0xFF4A9B8E),
+                  child: const CircleAvatar(
+                    radius: 18,
+                    backgroundImage: AssetImage('assets/profile.jpg'),
+                    backgroundColor: Colors.grey,
+                  ),
                 ),
               ),
             ],
@@ -143,204 +129,213 @@ class _PetsScreenState extends State<PetsScreen> {
   }
 
   Widget _buildCategoryChips() {
-    final display = ['All', 'DOG', 'CAT', 'RABBIT', 'BIRD'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: List.generate(display.length, (i) {
-          final label = display[i];
-          final value = label.toLowerCase();
-          final isSelected = (selectedCategory == 'all' && value == 'all') ||
-              (selectedCategory == value && value != 'all');
+    final categories = [
+      {'icon': Icons.pets, 'label': 'All', 'value': 'all'},
+      {'icon': Icons.pets, 'label': 'Dog', 'value': 'dog'},
+      {'icon': Icons.pets, 'label': 'Cat', 'value': 'cat'},
+      {'icon': Icons.cruelty_free, 'label': 'Rabbit', 'value': 'rabbit'},
+      {'icon': Icons.flutter_dash, 'label': 'Bird', 'value': 'bird'},
+    ];
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = selectedCategory == category['value'];
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedCategory = category['value'] as String;
+              });
+            },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              child: FilterChip(
-                selected: isSelected,
-                label: Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[600],
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF4A9B8E) : Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF4A9B8E) : Colors.grey[200]!,
+                  width: 1.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF4A9B8E).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    category['icon'] as IconData,
+                    color: isSelected ? Colors.white : Colors.grey[500],
+                    size: 20,
                   ),
-                ),
-                onSelected: (sel) {
-                  setState(() {
-                    selectedCategory = value == 'all' ? 'all' : value;
-                  });
-                },
-                backgroundColor: Colors.white,
-                selectedColor: const Color(0xFF4A9B8E),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[200]!),
-                ),
-                elevation: isSelected ? 4 : 0,
-                shadowColor: const Color(0xFF4A9B8E).withOpacity(0.4),
-                showCheckmark: false,
+                  const SizedBox(width: 8),
+                  Text(
+                    category['label'] as String,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
-        }),
+        },
       ),
     );
   }
 
-  Widget _buildPetCard(Map<String, dynamic> pet) {
-    return Container(
+Widget _buildPetCard(Map<String, dynamic> pet) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PetDetailsScreen(pet: pet),
+        ),
+      );
+    },
+    child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// IMAGE SECTION — EXACT SAME BEHAVIOR
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      pet['image'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            Icons.pets,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Hero(
+                tag: 'pet-${pet['name']}',
+                child: Image.asset(
+                  pet['image'],
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Icon(
+                        Icons.pets,
+                        size: 50,
+                        color: Colors.grey[400],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
+
+          /// TEXT + DETAILS SECTION — EXACT MATCH
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// NAME + HEART ICON
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       pet['name'],
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    AnimatedBuilder(
-                      animation: _favoritesManager,
-                      builder: (context, child) {
-                        final isFavorite = _favoritesManager.isFavorite(pet);
+                    ListenableBuilder(
+                      listenable: FavoritesManager(),
+                      builder: (context, _) {
+                        final isFav = FavoritesManager().isFavorite(pet);
                         return InkWell(
                           onTap: () {
-                            _favoritesManager.toggleFavorite(pet);
+                            FavoritesManager().toggleFavorite(pet);
+                            final isNowFav = FavoritesManager().isFavorite(pet);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  isFavorite 
-                                    ? '${pet['name']} removed from favorites' 
-                                    : '${pet['name']} added to favorites!'
+                                  isNowFav ? 'Added to favorites' : 'Removed from favorites',
+                                  style: const TextStyle(color: Colors.white),
                                 ),
-                                duration: const Duration(seconds: 1),
                                 backgroundColor: const Color(0xFF4A9B8E),
+                                duration: const Duration(seconds: 1),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(50),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: isFavorite ? const Color(0xFF4A9B8E).withOpacity(0.1) : Colors.transparent,
-                              shape: BoxShape.circle,
-                            ),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
                             child: Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                              color: isFavorite ? const Color(0xFF4A9B8E) : Colors.grey[400],
-                              size: 22,
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? const Color(0xFF4A9B8E) : Colors.teal,
+                              size: 20,
                             ),
                           ),
                         );
-                      },
+                      }
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+
+                const SizedBox(height: 4),
+
+                /// LOCATION ROW
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: Colors.grey[500]),
+                    Icon(Icons.location_on,
+                        size: 14, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
                       pet['location'],
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+
+                /// GENDER + AGE ROW
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (pet['gender'] == 'female' ? Colors.pink : Colors.blue).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        pet['gender'] == 'female' ? 'Female' : 'Male',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: pet['gender'] == 'female' ? Colors.pink : Colors.blue,
-                        ),
-                      ),
+                    Icon(
+                      pet['gender'] == 'female' ? Icons.female : Icons.male,
+                      size: 16,
+                      color: pet['gender'] == 'female'
+                          ? Colors.pink[300]
+                          : Colors.blue[300],
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        pet['age'],
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
+                    const SizedBox(width: 4),
+                    Text(
+                      pet['age'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
                       ),
                     ),
                   ],
@@ -350,8 +345,11 @@ class _PetsScreenState extends State<PetsScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(
@@ -359,7 +357,11 @@ class _PetsScreenState extends State<PetsScreen> {
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
       child: ClipRRect(
@@ -371,37 +373,39 @@ class _PetsScreenState extends State<PetsScreen> {
           unselectedItemColor: Colors.grey[400],
           showSelectedLabels: false,
           showUnselectedLabels: false,
+          elevation: 0,
           currentIndex: 2, // Pets tab active
           onTap: (index) {
             switch (index) {
               case 0:
-                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
                 break;
               case 1:
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const FavoriteScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const FavoriteScreen()),
                 );
                 break;
               case 2:
-                // already on Pets
+                // already on Pets but refresh logic if needed
+                 Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)),
+                );
                 break;
               case 3:
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) =>  const CommunityChatScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const CommunityChatScreen()),
                 );
                 break;
               case 4:
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
                 );
                 break;
             }

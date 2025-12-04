@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AdminChatScreen extends StatefulWidget {
-  final String petName;
-  const AdminChatScreen({super.key, required this.petName});
+  final String? petName;
+  const AdminChatScreen({super.key, this.petName});
 
   @override
   State<AdminChatScreen> createState() => _AdminChatScreenState();
@@ -18,8 +18,12 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   void initState() {
     super.initState();
     // Initial greeting from Admin
+    final greeting = widget.petName != null 
+        ? 'Hello! I see you\'re interested in ${widget.petName}. How can I help you with the adoption process?'
+        : 'Hello! How can we help you today?';
+        
     _messages.add({
-      'message': 'Hello! I see you\'re interested in ${widget.petName}. How can I help you with the adoption process?',
+      'message': greeting,
       'isMe': false,
       'time': _getCurrentTime(),
     });

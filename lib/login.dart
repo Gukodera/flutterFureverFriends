@@ -45,10 +45,56 @@ class _LoginPageState extends State<LoginPage> {
       await _authService.signInWithEmailPassword(email, password);
 
       // Navigate to HomeScreen (pets.dart)
+      // Show Success Modal
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (context.mounted) {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              }
+            });
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A9B8E).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_circle, color: Color(0xFF4A9B8E), size: 48),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Login Successful!',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Welcome back to Furever Friends',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       }
     } on FirebaseAuthException catch (e) {
