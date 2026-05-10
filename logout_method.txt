@@ -1,0 +1,11 @@
+
+  // ==================== AUTHENTICATION ====================
+  
+  /// Logout the current user
+  Future<void> logout() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      throw Exception('Failed to logout: $e');
+    }
+  }

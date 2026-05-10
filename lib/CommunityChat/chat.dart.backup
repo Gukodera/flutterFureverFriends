@@ -5,8 +5,6 @@ import '../pets.dart';
 import '../profile.dart';
 import '../pet_data.dart';
 import '../firebase_service.dart';
-import '../user_profile_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
@@ -149,25 +147,9 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg, bool isTablet) {
+  Widget _buildMessageBubble(Map<String, dynamic> message, bool isTablet) {
+    final isMe = message['isMe'] as bool;
     final size = MediaQuery.of(context).size;
-    final currentUserId = firebaseService.currentUserId;
-    final isMe = msg['userId'] == currentUserId;
-    
-    // Format timestamp
-    String timeStr = '';
-    if (msg['createdAt'] != null) {
-      try {
-        final timestamp = msg['createdAt'] as Timestamp;
-        final dateTime = timestamp.toDate();
-        final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
-        final minute = dateTime.minute.toString().padLeft(2, '0');
-        final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-        timeStr = '$hour:$minute $period';
-      } catch (e) {
-        timeStr = '';
-      }
-    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -176,27 +158,15 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserProfileScreen(
-                      userId: msg['userId'] ?? '',
-                      userName: msg['userName'],
-                      userPhoto: msg['userPhoto'],
-                    ),
-                  ),
-                );
-              },
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF4A9B8E),
               child: CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF4A9B8E),
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.grey[300],
-                  child: Icon(Icons.person, color: Colors.grey[600], size: 20),
-                ),
+                radius: 16,
+                backgroundImage: AssetImage(message['avatar']),
+                backgroundColor: Colors.grey[300],
+                onBackgroundImageError: (exception, stackTrace) {},
+                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
               ),
             ),
             const SizedBox(width: 8),
@@ -206,29 +176,14 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 if (!isMe)
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(
-                            userId: msg['userId'] ?? '',
-                            userName: msg['userName'],
-                            userPhoto: msg['userPhoto'],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 4),
-                      child: Text(
-                        msg['userName'] ?? 'Anonymous',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
-                          decoration: TextDecoration.underline,
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 4),
+                    child: Text(
+                      message['username'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
                       ),
                     ),
                   ),
@@ -257,7 +212,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                     ],
                   ),
                   child: Text(
-                    msg['message'] ?? '',
+                    message['message'],
                     style: TextStyle(
                       color: isMe ? Colors.white : Colors.black87,
                       fontSize: 14,
@@ -265,17 +220,16 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                     ),
                   ),
                 ),
-                if (timeStr.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-                    child: Text(
-                      timeStr,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                  child: Text(
+                    message['time'],
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[500],
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -286,8 +240,10 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
               backgroundColor: const Color(0xFF4A9B8E),
               child: CircleAvatar(
                 radius: 16,
+                backgroundImage: AssetImage(message['avatar']),
                 backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, color: Colors.grey[600], size: 20),
+                onBackgroundImageError: (exception, stackTrace) {},
+                child: Icon(Icons.person, color: Colors.grey[400], size: 20),
               ),
             ),
           ],
@@ -360,37 +316,6 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
         ),
       ),
     );
-  }
-
-  void _sendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
-
-    final message = _messageController.text.trim();
-    _messageController.clear();
-
-    try {
-      await firebaseService.sendCommunityMessage(message);
-      
-      // Auto scroll to bottom after sending
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients && mounted) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error sending message: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   void _showAttachmentOptions(BuildContext context) {

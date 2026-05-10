@@ -2,49 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 
-class AdminChatScreen extends StatefulWidget {
-  final String? petName;
-  const AdminChatScreen({super.key, this.petName});
+class AdminReplyScreen extends StatefulWidget {
+  final String chatId;
+  final String userName;
+
+  const AdminReplyScreen({
+    super.key,
+    required this.chatId,
+    required this.userName,
+  });
 
   @override
-  State<AdminChatScreen> createState() => _AdminChatScreenState();
+  State<AdminReplyScreen> createState() => _AdminReplyScreenState();
 }
 
-class _AdminChatScreenState extends State<AdminChatScreen> {
+class _AdminReplyScreenState extends State<AdminReplyScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final firebaseService = FirebaseService();
-  bool _hasInitialMessage = false;
 
   @override
   void initState() {
     super.initState();
-    // Send initial greeting if this is about a specific pet
-    if (widget.petName != null && !_hasInitialMessage) {
-      _sendInitialGreeting();
-    }
+    // Mark chat as read when opened
+    firebaseService.markAdminChatAsRead(widget.chatId);
   }
 
-  Future<void> _sendInitialGreeting() async {
-    // Check if there are any messages first
-    final messages = await firebaseService.getAdminChatMessages().first;
-    if (messages.isEmpty && widget.petName != null) {
-      _hasInitialMessage = true;
-      await firebaseService.sendAdminMessage(
-        'Hi! I\'m interested in adopting ${widget.petName}. Can you please provide more information about the adoption process?',
-        petId: null,
-      );
-    }
-  }
-
-  void _sendMessage() async {
+  void _sendReply() async {
     if (_messageController.text.trim().isEmpty) return;
 
     final message = _messageController.text.trim();
     _messageController.clear();
-    
+
     try {
-      await firebaseService.sendAdminMessage(message);
+      await firebaseService.sendAdminReply(widget.chatId, message);
       
       // Auto scroll to bottom
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -59,7 +50,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sending message: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -87,71 +78,47 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
         ),
         title: Row(
           children: [
-            Stack(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFF4A9B8E),
-                  child: Icon(Icons.support_agent, color: Colors.white, size: 24),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFF4A9B8E).withOpacity(0.2),
+              child: Text(
+                widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4A9B8E),
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Admin Support',
-                  style: TextStyle(
+                  widget.userName,
+                  style: const TextStyle(
                     color: Colors.black87,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  'Online',
+                const Text(
+                  'User Chat',
                   style: TextStyle(
-                    color: Color(0xFF4A9B8E),
+                    color: Colors.grey,
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.call, color: Color(0xFF4A9B8E)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Call feature coming soon!'),
-                  backgroundColor: Color(0xFF4A9B8E),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: firebaseService.getAdminChatMessages(),
+              stream: firebaseService.getAdminChatMessagesForUser(widget.chatId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -167,13 +134,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[300]),
                         const SizedBox(height: 16),
                         Text(
-                          'No messages yet',
+                          'No messages in this chat',
                           style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Start a conversation with our support team!',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                         ),
                       ],
                     ),
@@ -181,7 +143,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                 }
 
                 final messages = snapshot.data!;
-                
+
                 // Auto scroll when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
@@ -195,11 +157,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
-                    final isMe = msg['senderId'] == firebaseService.currentUserId;
                     final isAdmin = msg['isAdmin'] == true;
-                    
+
                     return Align(
-                      alignment: isMe && !isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         constraints: BoxConstraints(
@@ -207,12 +168,12 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isMe && !isAdmin ? const Color(0xFF4A9B8E) : Colors.white,
+                          color: isAdmin ? const Color(0xFF4A9B8E) : Colors.white,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(20),
                             topRight: const Radius.circular(20),
-                            bottomLeft: Radius.circular(isMe && !isAdmin ? 20 : 4),
-                            bottomRight: Radius.circular(isMe && !isAdmin ? 4 : 20),
+                            bottomLeft: Radius.circular(isAdmin ? 20 : 4),
+                            bottomRight: Radius.circular(isAdmin ? 4 : 20),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -225,20 +186,32 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (!isAdmin)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  msg['senderName'] ?? 'User',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
                             if (isAdmin)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.verified, size: 14, color: Colors.blue[600]),
+                                    const Icon(Icons.verified, size: 14, color: Colors.white70),
                                     const SizedBox(width: 4),
                                     Text(
                                       msg['senderName'] ?? 'Admin',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.blue[600],
+                                        color: Colors.white70,
                                       ),
                                     ),
                                   ],
@@ -247,7 +220,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                             Text(
                               msg['message'] ?? '',
                               style: TextStyle(
-                                color: isMe && !isAdmin ? Colors.white : Colors.black87,
+                                color: isAdmin ? Colors.white : Colors.black87,
                                 fontSize: 15,
                                 height: 1.4,
                               ),
@@ -256,9 +229,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                             Text(
                               _formatTime(msg['createdAt'] as Timestamp?),
                               style: TextStyle(
-                                color: isMe && !isAdmin 
-                                    ? Colors.white.withOpacity(0.7) 
-                                    : Colors.grey[400],
+                                color: isAdmin ? Colors.white.withOpacity(0.7) : Colors.grey[400],
                                 fontSize: 10,
                               ),
                             ),
@@ -293,17 +264,6 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Color(0xFF4A9B8E)),
-                onPressed: () {},
-              ),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -314,17 +274,18 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                 child: TextField(
                   controller: _messageController,
                   decoration: const InputDecoration(
-                    hintText: 'Type a message...',
+                    hintText: 'Type your reply...',
                     border: InputBorder.none,
                     hintStyle: TextStyle(color: Colors.grey),
                   ),
-                  onSubmitted: (_) => _sendMessage(),
+                  onSubmitted: (_) => _sendReply(),
+                  maxLines: null,
                 ),
               ),
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: _sendMessage,
+              onTap: _sendReply,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: const BoxDecoration(

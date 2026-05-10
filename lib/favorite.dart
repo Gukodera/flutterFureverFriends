@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'favorites_manager.dart';
 import 'pets.dart';
-import 'PetScreen.dart';
+import 'PetScreen.dart'; 
 import 'CommunityChat/chat.dart';
 import 'profile.dart';
 import 'pet_details.dart';
-import 'pet_data.dart'; // Import shared data
+import 'pet_data.dart';
+import 'firebase_service.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -14,210 +16,220 @@ class FavoriteScreen extends StatefulWidget {
   State<FavoriteScreen> createState() => _FavoriteScreenState();
 }
 
-class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _FavoriteScreenState extends State<FavoriteScreen> {
+  String selectedCategory = 'All';
+  final List<String> categories = ['All', 'Dog', 'Cat', 'Bird', 'Bunny', 'Other'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'My Favorites',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: ListenableBuilder(
-        listenable: FavoritesManager(),
-        builder: (context, child) {
-          final favorites = FavoritesManager().favorites;
-          
-          if (favorites.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+      backgroundColor: const Color(0xFFFAFAFA), // Very subtle grey for contrast
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildFilterChips(),
+            const SizedBox(height: 10),
+            Expanded(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: FirebaseService().getPets(),
+                builder: (context, petsSnapshot) {
+                  return ListenableBuilder(
+                    listenable: FavoritesManager(),
+                    builder: (context, child) {
+                      final favoritePets = FavoritesManager().favorites;
+                      
+                      // Sync with Firebase status (remove adopted)
+                      final availablePetIds = petsSnapshot.hasData 
+                          ? petsSnapshot.data!.map((p) => p['id'] ?? p['name']).toSet()
+                          : <String>{};
+                      
+                      var favorites = favoritePets.where((pet) {
+                        final petId = pet['id'] ?? pet['name'];
+                        if (petsSnapshot.hasData) {
+                          return availablePetIds.contains(petId);
+                        }
+                        return pet['isAdopted'] != true;
+                      }).toList();
+
+                      // Apply Category Filter
+                      if (selectedCategory != 'All') {
+                        favorites = favorites.where((pet) {
+                          final type = (pet['type'] ?? '').toString().toLowerCase();
+                          // Handle "Bunny" vs "Rabbit" naming differences if any
+                          if (selectedCategory == 'Bunny' && (type == 'rabbit' || type == 'bunny')) return true;
+                          return type == selectedCategory.toLowerCase();
+                        }).toList();
+                      }
+
+                      if (favorites.isEmpty) {
+                        return _buildEmptyState(selectedCategory != 'All');
+                      }
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 20,
+                          childAspectRatio: 0.7, // Taller cards for premium feel
                         ),
-                      ],
-                    ),
-                    child: Icon(Icons.favorite_border_rounded, size: 80, color: Colors.grey[300]),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No favorites yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Start adding friends you love!',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)),
+                        itemCount: favorites.length,
+                        itemBuilder: (context, index) => _buildPremiumCard(favorites[index]),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A9B8E),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text('Explore Pets'),
-                  ),
-                ],
+                  );
+                },
               ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
             ),
-            itemCount: favorites.length,
-            itemBuilder: (context, index) {
-              final pet = favorites[index];
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.1),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: _controller,
-                  curve: Interval(
-                    index * 0.1,
-                    1.0,
-                    curve: Curves.easeOut,
-                  ),
-                )),
-                child: FadeTransition(
-                  opacity: Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
-                    parent: _controller,
-                    curve: Interval(index * 0.1, 1.0, curve: Curves.easeOut),
-                  )),
-                  child: _buildFavoriteCard(pet),
-                ),
-              );
-            },
-          );
-        },
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
-  Widget _buildFavoriteCard(Map<String, dynamic> pet) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Favorites',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                  color: Colors.teal,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Your loved companions',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Container(
+             padding: const EdgeInsets.all(12),
+             decoration: BoxDecoration(
+               color: Colors.white,
+               shape: BoxShape.circle,
+               border: Border.all(color: Colors.grey[200]!),
+             ),
+             child: const Icon(Icons.favorite, color: Colors.pinkAccent),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SizedBox(
+      height: 45,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = selectedCategory == category;
+          return GestureDetector(
+            onTap: () => setState(() => selectedCategory = category),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.teal : Colors.white,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[300]!),
+                boxShadow: isSelected 
+                  ? [BoxShadow(color: Colors.teal.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] 
+                  : [],
+              ),
+              child: Text(
+                category,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.teal,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPremiumCard(Map<String, dynamic> pet) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => PetDetailsScreen(pet: pet),
-          ),
+          MaterialPageRoute( builder: (context) => PetDetailsScreen(pet: pet)),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              color: Colors.teal.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(0)),
                     child: Hero(
-                      tag: 'fav-${pet['name']}',
-                      child: Image.asset(
-                        pet['image'],
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(child: Icon(Icons.pets, color: Colors.grey)),
-                        ),
-                      ),
+                      tag: 'fav_${pet['id'] ?? pet['name']}',
+                      child: pet['imageBase64'] != null && (pet['imageBase64'] as String).isNotEmpty
+                          ? Image.memory(
+                              base64Decode(pet['imageBase64']),
+                              fit: BoxFit.cover,
+                            )
+                          : Image.asset(
+                              pet['image'] ?? 'assets/placeholder_dog.png',
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
                   Positioned(
                     top: 10,
                     right: 10,
                     child: GestureDetector(
-                      onTap: () {
-                        FavoritesManager().toggleFavorite(pet);
-                      },
+                      onTap: () => FavoritesManager().toggleFavorite(pet),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withOpacity(0.95),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.teal.withOpacity(0.1), blurRadius: 4),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          color: Color(0xFF4A9B8E),
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.close_rounded, size: 16, color: Colors.teal),
                       ),
                     ),
                   ),
@@ -225,41 +237,93 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     pet['name'],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                      color: Colors.teal,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_rounded, size: 14, color: Colors.grey[400]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          pet['location'],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 6),
+                  Text(
+                    '${pet['age']} • ${pet['type']}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isFiltered) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+             decoration: BoxDecoration(
+               color: Colors.grey[100],
+               shape: BoxShape.circle,
+             ),
+             child: Icon(
+               isFiltered ? Icons.filter_list_off_rounded : Icons.favorite_border_rounded, 
+               size: 40, 
+               color: Colors.grey[400],
+             ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            isFiltered ? 'No pets in this category' : 'No favorites yet',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[800],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (!isFiltered) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Start adding friends you love!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white, // Premium teal
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                elevation: 0,
+              ),
+              child: const Text('Explore Pets'),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -271,7 +335,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.teal.withOpacity(0.04),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -282,50 +346,36 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF4A9B8E),
+          selectedItemColor: Colors.teal, 
           unselectedItemColor: Colors.grey[400],
           showSelectedLabels: false,
           showUnselectedLabels: false,
           elevation: 0,
-          currentIndex: 1, // Favorites tab active
+          currentIndex: 1, 
           onTap: (index) {
-            switch (index) {
+             if (index == 1) return;
+             switch (index) {
               case 0:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                );
-                break;
-              case 1:
-                // Already on Favorites
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
                 break;
               case 2:
-                // Navigate to PetsScreen with ALL pets
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)),
-                );
+                // Ensure correct PetsScreen import usage
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PetsScreen(pets: allPets)));
                 break;
               case 3:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CommunityChatScreen()),
-                );
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const CommunityChatScreen()));
                 break;
               case 4:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                );
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
                 break;
             }
           },
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: 'Favorites'),
-            BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 40, color: Color(0xFF4A9B8E)), label: 'Add'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Messages'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 26), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded, size: 26), label: 'Favorites'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_circle_rounded, size: 42, color: Colors.teal), label: 'Add'),
+            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded, size: 26), label: 'Messages'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded, size: 26), label: 'Profile'),
           ],
         ),
       ),

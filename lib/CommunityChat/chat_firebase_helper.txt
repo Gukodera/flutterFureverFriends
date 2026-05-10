@@ -1,0 +1,155 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Add this import to chat.dart at the top:
+// import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Replace the _buildMessageBubble method with this:
+Widget _buildMessageBubble(Map<String, dynamic> msg, bool isTablet) {
+  final size = MediaQuery.of(context).size;
+  final currentUserId = firebaseService.currentUserId;
+  final isMe = msg['userId'] == currentUserId;
+  
+  // Format timestamp
+  String timeStr = '';
+  if (msg['createdAt'] != null) {
+    try {
+      final timestamp = msg['createdAt'] as Timestamp;
+      final dateTime = timestamp.toDate();
+      final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+      timeStr = '$hour:$minute $period';
+    } catch (e) {
+      timeStr = '';
+    }
+  }
+
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isMe) ...[
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF4A9B8E),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey[300],
+              child: Icon(Icons.person, color: Colors.grey[600], size: 20),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              if (!isMe)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 4),
+                  child: Text(
+                    msg['userName'] ?? 'Anonymous',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: isTablet ? 400 : size.width * 0.65,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isMe ? const Color(0xFF4A9B8E) : Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(isMe ? 16 : 4),
+                    bottomRight: Radius.circular(isMe ? 4 : 16),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  msg['message'] ?? '',
+                  style: TextStyle(
+                    color: isMe ? Colors.white : Colors.black87,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              if (timeStr.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                  child: Text(
+                    timeStr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (isMe) ...[
+          const SizedBox(width: 8),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF4A9B8E),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey[300],
+              child: Icon(Icons.person, color: Colors.grey[600], size: 20),
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+// And replace _sendMessage with this:
+void _sendMessage() async {
+  if (_messageController.text.trim().isEmpty) return;
+
+  final message = _messageController.text.trim();
+  _messageController.clear();
+
+  try {
+    await firebaseService.sendCommunityMessage(message);
+    
+    // Auto scroll to bottom after sending
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients &&  mounted) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sending message: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}

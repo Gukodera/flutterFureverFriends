@@ -5,7 +5,14 @@ import 'PetScreen.dart';
 import 'CommunityChat/chat.dart';
 import 'pet_data.dart';
 import 'admin_chat.dart';
-import 'PetScreen.dart';
+import 'firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'admin_panel.dart';
+import 'edit_profile_screen.dart';
+import 'login.dart';
+import 'pet_tracking.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,6 +22,48 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String _userName = 'Loading...';
+  String _userLocation = '';
+  String? _userPhotoBase64;
+  int _adoptedCount = 0;
+  int _favoritesCount = 0;
+  int _messagesCount = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userData = await FirebaseService().getUserProfile();
+      final stats = await FirebaseService().getUserStats();
+      
+      if (mounted) {
+        setState(() {
+          if (userData != null) {
+            _userName = userData['displayName'] ?? 
+                       FirebaseService().currentUser?.displayName ?? 
+                       'User';
+            _userLocation = userData['location'] ?? '';
+            _userPhotoBase64 = userData['photoURL'];
+          }
+          
+          _adoptedCount = stats['adopted'] ?? 0;
+          _favoritesCount = stats['favorites'] ?? 0;
+          _messagesCount = stats['messages'] ?? 0;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _userName = FirebaseService().currentUser?.displayName ?? 'User';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -42,44 +91,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black87),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeScreen())),
-                ),
-              ),
-              const Text(
-                'My Profile',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 40), 
-            ],
-          ),
+    return AppBar(
+      automaticallyImplyLeading: false,
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings, color: Colors.black54),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
+            );
+          },
         ),
-      ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
@@ -87,52 +114,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         Stack(
-          alignment: Alignment.bottomRight,
           children: [
             Container(
-              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF4A9B8E), width: 3),
+                border: Border.all(color: const Color(0xFF4A9B8E), width: 4),
               ),
               child: CircleAvatar(
-                radius: isTablet ? 80 : 60,
-                backgroundImage: const AssetImage('assets/profile.jpg'),
-                backgroundColor: Colors.grey[300],
+                radius: isTablet ? 60 : 50,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: _userPhotoBase64 != null
+                    ? MemoryImage(base64Decode(_userPhotoBase64!))
+                    : null,
+                child: _userPhotoBase64 == null
+                    ? Icon(Icons.person, size: isTablet ? 60 : 50, color: Colors.grey[400])
+                    : null,
               ),
             ),
-            Container(
-              margin: const EdgeInsets.only(bottom: 8, right: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A9B8E),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                onPressed: () {},
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+             Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4A9B8E),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, color: Colors.white, size: 16),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Bae Suzy',
+        Text(
+          _userName,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: isTablet ? 28 : 24,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Panabo City, Philippines',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_on, size: 16, color: Colors.grey[500]),
+            const SizedBox(width: 4),
+            Text(
+              _userLocation.isNotEmpty ? _userLocation : 'No location set',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -157,11 +192,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItem('Adopted', '2'),
+            _buildStatItem('Adopted', '$_adoptedCount'),
             Container(height: 40, width: 1, color: Colors.grey[200]),
-            _buildStatItem('Favorites', '12'),
+            _buildStatItem('Favorites', '$_favoritesCount'),
             Container(height: 40, width: 1, color: Colors.grey[200]),
-            _buildStatItem('Messages', '5'),
+            _buildStatItem('Messages', '$_messagesCount'),
           ],
         ),
       ),
@@ -220,6 +255,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           _buildMenuItem(
+            icon: Icons.location_searching_rounded,
+            title: 'Track Your Pet',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PetSelectionScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildMenuItem(
             icon: Icons.shield_outlined,
             title: 'Privacy & Security',
             onTap: () {
@@ -240,12 +286,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
+          if (FirebaseService().isAdmin) ...[
+            const SizedBox(height: 16),
+            _buildMenuItem(
+              icon: Icons.admin_panel_settings,
+              title: 'Admin Dashboard',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPanel()),
+                );
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           _buildMenuItem(
             icon: Icons.logout_rounded,
             title: 'Logout',
-            onTap: () {
-               // Add logout logic here
+            onTap: () async {
+             final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Logout'),
+                content: const Text('Are you sure?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                  ElevatedButton(onPressed: () => Navigator.pop(ctx, true), style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A9B8E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), child: const Text('Logout')),
+                ],
+              ),
+            );
+            
+            if (confirmed == true && context.mounted) {
+              await FirebaseService().logout();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            }
             },
             isDestructive: true,
           ),
@@ -376,96 +457,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// --- Sub-Screens ---
 
-class EditProfileScreen extends StatelessWidget {
-  const EditProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Center(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  const CircleAvatar(
-                    radius: 60,
-                    backgroundImage: AssetImage('assets/profile.jpg'),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4A9B8E),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            _buildTextField('Full Name', 'Bae Suzy'),
-            const SizedBox(height: 20),
-            _buildTextField('Email', 'baesuzy@example.com'),
-            const SizedBox(height: 20),
-            _buildTextField('Phone', '+63 912 345 6789'),
-            const SizedBox(height: 20),
-            _buildTextField('Location', 'Panabo City, Philippines'),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9B8E),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, String initialValue) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
-        const SizedBox(height: 8),
-        TextFormField(
-          initialValue: initialValue,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          ),
-        ),
-      ],
-    );
-  }
-}
+// EditProfileScreen is now imported from edit_profile_screen.dart
 
 class MyRequestsScreen extends StatelessWidget {
   const MyRequestsScreen({super.key});
@@ -483,35 +476,91 @@ class MyRequestsScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildRequestCard(
-            context,
-            'Max',
-            'Dog',
-            'assets/dog3.jpg',
-            'Pending Approval',
-            'Applied on Dec 1, 2023',
-            Colors.orange,
-          ),
-          const SizedBox(height: 20),
-          _buildRequestCard(
-            context,
-            'Luna',
-            'Cat',
-            'assets/cat1.jpg',
-            'Approved',
-            'Applied on Nov 28, 2023',
-            const Color(0xFF4A9B8E),
-          ),
-        ],
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: FirebaseService().getUserAdoptionRequests(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4A9B8E)),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Adoption Requests',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final requests = snapshot.data!;
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(20),
+            physics: const BouncingScrollPhysics(),
+            itemCount: requests.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 20),
+            itemBuilder: (context, index) {
+              final request = requests[index];
+              final status = request['status'] ?? 'pending';
+              final petName = request['petName'] ?? 'Unknown';
+              final petType = request['petType'] ?? 'Unknown';
+              final createdAt = request['createdAt'] as Timestamp?;
+              final date = createdAt != null 
+                  ? 'Applied on ${DateFormat('MMM dd, yyyy').format(createdAt.toDate())}'
+                  : 'Applied recently';
+              
+              Color statusColor;
+              String statusText;
+              switch (status) {
+                case 'approved':
+                  statusColor = const Color(0xFF4A9B8E);
+                  statusText = 'Approved';
+                  break;
+                case 'rejected':
+                  statusColor = Colors.red;
+                  statusText = 'Rejected';
+                  break;
+                default:
+                  statusColor = Colors.orange;
+                  statusText = 'Pending Approval';
+              }
+
+              return _buildRequestCard(
+                context,
+                petName,
+                petType,
+                request['petImageBase64'],
+                statusText,
+                date,
+                statusColor,
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, String name, String type, String image, String status, String date, Color statusColor) {
+  Widget _buildRequestCard(BuildContext context, String name, String type, String? image, String status, String date, Color statusColor) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -552,7 +601,27 @@ class MyRequestsScreen extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(image, width: 70, height: 70, fit: BoxFit.cover),
+                        child: (image != null && image.isNotEmpty)
+                            ? Image.memory(
+                                base64Decode(image),
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 70,
+                                    height: 70,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.pets, color: Colors.grey, size: 35),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: 70,
+                                height: 70,
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.pets, color: Colors.grey, size: 35),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -664,7 +733,10 @@ class PrivacySecurityScreen extends StatelessWidget {
             context,
             'Change Password',
             Icons.lock_outline,
-            onTap: () => _showChangePasswordDialog(context),
+            onTap: () => showDialog(
+              context: context,
+              builder: (context) => const ChangePasswordDialog(),
+            ),
           ),
           _buildSettingItem(
             context,
@@ -729,17 +801,136 @@ class PrivacySecurityScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showChangePasswordDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Password'),
-        content: Column(
+class ChangePasswordDialog extends StatefulWidget {
+  const ChangePasswordDialog({super.key});
+
+  @override
+  State<ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    setState(() {
+      _error = null;
+      _isLoading = true;
+    });
+
+    try {
+      if (_newPasswordController.text != _confirmPasswordController.text) {
+        throw Exception('New passwords do not match');
+      }
+
+      if (_newPasswordController.text.length < 6) {
+        throw Exception('Password must be at least 6 characters');
+      }
+
+      await FirebaseService().changePassword(
+        _currentPasswordController.text,
+        _newPasswordController.text,
+      );
+
+      if (mounted) {
+        // Show Success Modal on top of the form
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle_outline, color: Color(0xFF4A9B8E), size: 60),
+                const SizedBox(height: 16),
+                const Text(
+                  'Password Changed!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Password updated successfully.\nPlease login again to continue.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context), // Closes the Success Dialog
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A9B8E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Logout'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // After user clicks OK -> Destroy Session & Navigate
+        await FirebaseService().logout();
+        
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+            ),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Change Password'),
+      content: SingleChildScrollView(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_error != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Colors.red[700], fontSize: 12),
+                ),
+              ),
             TextField(
+              controller: _currentPasswordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Current Password',
@@ -748,6 +939,7 @@ class PrivacySecurityScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _newPasswordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'New Password',
@@ -756,6 +948,7 @@ class PrivacySecurityScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _confirmPasswordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Confirm New Password',
@@ -764,26 +957,25 @@ class PrivacySecurityScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Password changed successfully!'), backgroundColor: Color(0xFF4A9B8E)),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A9B8E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Update'),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _changePassword,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF4A9B8E),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: _isLoading 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Text('Update'),
+        ),
+      ],
     );
   }
 }
+

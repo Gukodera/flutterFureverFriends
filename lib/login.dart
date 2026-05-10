@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_service.dart';
+import 'firebase_service.dart';
 import 'petScreen.dart'; 
 import 'register.dart'; // Import your RegisterPage
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final bool showSuccessMessage;
+  const LoginPage({super.key, this.showSuccessMessage = false});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -19,6 +21,56 @@ class _LoginPageState extends State<LoginPage> {
 
   bool obscurePassword = true;
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showSuccessMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSuccessDialog();
+      });
+    }
+  }
+  
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_outline, color: Color(0xFF4A9B8E), size: 60),
+            const SizedBox(height: 16),
+            const Text(
+              'Password Changed!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your session has been terminated for security.\nPlease login again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A9B8E),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('OK'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -44,9 +96,10 @@ class _LoginPageState extends State<LoginPage> {
 
       await _authService.signInWithEmailPassword(email, password);
 
-      // Navigate to HomeScreen (pets.dart)
       // Show Success Modal
       if (mounted) {
+        final isAdmin = FirebaseService().isAdmin;
+        
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -73,22 +126,26 @@ class _LoginPageState extends State<LoginPage> {
                         color: const Color(0xFF4A9B8E).withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check_circle, color: Color(0xFF4A9B8E), size: 48),
+                      child: Icon(
+                        isAdmin ? Icons.admin_panel_settings : Icons.check_circle, 
+                        color: const Color(0xFF4A9B8E), 
+                        size: 48
+                      ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Login Successful!',
-                      style: TextStyle(
+                    Text(
+                      isAdmin ? 'Welcome Admin!' : 'Login Successful!',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Welcome back to Furever Friends',
+                    Text(
+                      isAdmin ? 'You have full access to the dashboard.' : 'Welcome back to Furever Friends',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
+                      style: const TextStyle(color: Colors.grey),
                     ),
                   ],
                 ),

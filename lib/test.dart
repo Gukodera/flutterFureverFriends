@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login.dart'; // 👈 Make sure this file exists in your project
-import 'welcome.dart';
+import 'auth_gate.dart';
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -13,12 +12,12 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-      );
-    });
+Future.delayed(const Duration(seconds: 3), () {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const AuthGate()), // Now goes to AuthGate
+  );
+});
   }
 
   @override

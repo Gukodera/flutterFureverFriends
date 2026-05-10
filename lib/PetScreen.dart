@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'login.dart';
 import 'pets.dart';
 import 'CommunityChat/chat.dart';
@@ -7,6 +8,10 @@ import 'favorites_manager.dart';
 import 'pet_details.dart';
 import 'favorite.dart';
 import 'pet_data.dart';
+import 'firebase_service.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,10 +20,60 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedCategory = 0; 
+  // State variables for Search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  
+  int _selectedCategory = 0;
+  String? _userPhotoBase64;
+  String _userLocation = 'Panabo City';
 
-  // Use the shared data, but limit to 4 for the home screen
-  final List<Map<String, dynamic>> _pets = allPets.take(4).toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    
+    // Add listener to the search controller
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Method to update search query and trigger UI refresh
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userData = await FirebaseService().getUserProfile();
+      if (mounted && userData != null) {
+        setState(() {
+          _userPhotoBase64 = userData['photoURL'];
+          if (userData['location'] != null && userData['location'].isNotEmpty) {
+            _userLocation = userData['location'];
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
+  final List<Map<String, dynamic>> _categories = [
+    {'icon': Icons.pets, 'label': 'All'},
+    {'icon': Icons.pets, 'label': 'Dog'},
+    {'icon': Icons.pets, 'label': 'Cat'},
+    {'icon': Icons.cruelty_free, 'label': 'Rabbit'},
+    {'icon': Icons.flutter_dash, 'label': 'Bird'},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +125,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       
                       const SizedBox(height: 16),
                       
-                      // Pet Grid (Limited to 4)
+                      // Pet Grid (Contains Filtering Logic)
                       _buildPetGrid(isTablet),
                       
                       const SizedBox(height: 32),
 
-                      // Donate Section (New Position)
+                      // Donate Section
                       _buildDonateSection(),
                       
                       const SizedBox(height: 30),
@@ -113,7 +168,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.grid_view_rounded, size: 24, color: Colors.black87),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
             ),
           ),
           Column(
@@ -126,13 +186,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.location_on, size: 14, color: Color(0xFF4A9B8E)),
-                  SizedBox(width: 4),
+                  const Icon(Icons.location_on, size: 14, color: Color(0xFF4A9B8E)),
+                  const SizedBox(width: 4),
                   Text(
-                    'Panabo City',
-                    style: TextStyle(
+                    _userLocation,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -148,10 +208,15 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF4A9B8E), width: 2),
             ),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 20,
-              backgroundImage: AssetImage('assets/profile.jpg'),
-              backgroundColor: Colors.grey,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: _userPhotoBase64 != null
+                  ? MemoryImage(base64Decode(_userPhotoBase64!))
+                  : null,
+              child: _userPhotoBase64 == null
+                  ? const Icon(Icons.person, color: Colors.grey)
+                  : null,
             ),
           ),
         ],
@@ -173,8 +238,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: TextField(
+        controller: _searchController, 
         decoration: InputDecoration(
-          hintText: 'Search for a friend...',
+          hintText: 'Search for a pet name, location, or type...',
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
           prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
           suffixIcon: Container(
@@ -198,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildModernBanner(bool isTablet) {
     return Container(
       width: double.infinity,
-      height: isTablet ? 220 : 180, // Increased height to prevent overflow
+      height: isTablet ? 220 : 180, 
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -241,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // Content
           Padding(
-            padding: const EdgeInsets.all(20.0), // Reduced padding
+            padding: const EdgeInsets.all(20.0), 
             child: Row(
               children: [
                 Expanded(
@@ -265,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8), // Reduced spacing
+                      const SizedBox(height: 8), 
                       const Text(
                         'Find your\nperfect match',
                         style: TextStyle(
@@ -275,9 +341,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 12), // Reduced spacing
+                      const SizedBox(height: 12), 
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PetsScreen(pets: allPets),
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF2D9E8E),
@@ -301,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   flex: 2,
                   child: Image.asset(
-                    'assets/banner.jpg', // Ensure this asset exists or use a generic one
+                    'assets/banner.jpg', 
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.pets,
@@ -333,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (showSeeAll)
           TextButton(
             onPressed: () {
-               Navigator.push(
+                Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => PetsScreen(pets: allPets),
@@ -353,19 +426,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildModernCategories() {
-    final categories = [
-      {'icon': Icons.pets, 'label': 'All'},
-      {'icon': Icons.pets, 'label': 'Dog'},
-      {'icon': Icons.pets, 'label': 'Cat'},
-      {'icon': Icons.cruelty_free, 'label': 'Rabbit'},
-      {'icon': Icons.flutter_dash, 'label': 'Bird'},
-    ];
-
     return SizedBox(
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
+        itemCount: _categories.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           final isSelected = _selectedCategory == index;
@@ -373,6 +438,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               setState(() {
                 _selectedCategory = index;
+                // Clear search when changing category for clean filtering
+                _searchController.clear(); 
               });
             },
             child: AnimatedContainer(
@@ -399,13 +466,13 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 children: [
                   Icon(
-                    categories[index]['icon'] as IconData,
+                    _categories[index]['icon'] as IconData,
                     color: isSelected ? Colors.white : Colors.grey[500],
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    categories[index]['label'] as String,
+                    _categories[index]['label'] as String,
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.grey[600],
                       fontWeight: FontWeight.w600,
@@ -474,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // Add donation logic here
+                _showDonationOptions(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A9B8E),
@@ -499,7 +566,337 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showDonationOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Support Our Cause',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose a way to donate:',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            _buildDonationOption(
+              icon: Icons.public,
+              title: 'Donate Online (PayPal)',
+              subtitle: 'Secure connection via browser',
+              onTap: () {
+                Navigator.pop(context);
+                _launchDonationUrl('https://www.paypal.com/donate/?hosted_button_id=YOUR_ID'); // Replace with actual URL
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildDonationOption(
+              icon: Icons.account_balance_wallet,
+              title: 'GCash / Bank Transfer',
+              subtitle: 'Copy account number or scan QR',
+              onTap: () {
+                Navigator.pop(context);
+                _showBankDetails(context);
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDonationOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[200]!),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A9B8E).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF4A9B8E)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBankDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Transfer Details & QR Code'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // QR Code Section
+              _buildQRCodeSection(),
+              const SizedBox(height: 20),
+              
+              const Text('Account Details:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 12),
+              
+              // Copyable Details
+              _buildCopyableDetail(context, 'GCash Number', '0912 345 6789'),
+              const SizedBox(height: 16),
+              _buildCopyableDetail(context, 'BDO Account', '1234 5678 9012'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF4A9B8E))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget to display the QR Code
+  Widget _buildQRCodeSection() {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[200]!),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Image.asset(
+              'assets/gcash.jpg', // <<< IMPORTANT: Use your actual asset path
+              width: 150,
+              height: 150,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 150,
+                  height: 150,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Text(
+                      'QR Code Image\nMissing',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Scan using your GCash app',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCopyableDetail(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Copied to clipboard'),
+                duration: Duration(seconds: 1),
+                backgroundColor: Color(0xFF4A9B8E),
+              ),
+            );
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const Icon(Icons.copy, size: 20, color: Color(0xFF4A9B8E)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _launchDonationUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch donation link')),
+        );
+      }
+    }
+  }
+
   Widget _buildPetGrid(bool isTablet) {
+    // 1. Determine the base stream based on category selection
+    final Stream<List<Map<String, dynamic>>> baseStream = _selectedCategory == 0 
+        ? FirebaseService().getPets()
+        : FirebaseService().getPetsByCategory(_categories[_selectedCategory]['label']);
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: baseStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(color: Color(0xFF4A9B8E)),
+                SizedBox(height: 16),
+                Text('Loading pets from Firebase...'),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          // If Firebase errors, fallback to local data, then filter it
+          print('Firebase Error: ${snapshot.error}');
+          final filteredFallbackPets = allPets.where((pet) {
+             // Multi-field search for fallback data
+            return (pet['name']?.toLowerCase().contains(_searchQuery) ?? false) ||
+                   (pet['location']?.toLowerCase().contains(_searchQuery) ?? false) ||
+                   (pet['type']?.toLowerCase().contains(_searchQuery) ?? false);
+          }).toList();
+
+          return _buildFilteredGrid(
+            isTablet, 
+            _searchQuery.isEmpty ? filteredFallbackPets.take(4).toList() : filteredFallbackPets,
+            isFallback: true
+          );
+        }
+
+        // 2. Get the pets from the stream (Firebase)
+        List<Map<String, dynamic>> firebasePets = snapshot.data ?? [];
+
+        // 3. Apply Search Filter (Multi-field logic)
+        final List<Map<String, dynamic>> filteredPets = firebasePets.where((pet) {
+          final petName = pet['name']?.toLowerCase() ?? '';
+          final petLocation = pet['location']?.toLowerCase() ?? '';
+          final petType = pet['type']?.toLowerCase() ?? '';
+
+          return petName.contains(_searchQuery) || 
+                 petLocation.contains(_searchQuery) || 
+                 petType.contains(_searchQuery);
+        }).toList();
+
+        // 4. Decide which list to display
+        final petsToDisplay = _searchQuery.isEmpty ? filteredPets.take(4).toList() : filteredPets;
+
+
+        // 5. Handle empty state.
+        if (petsToDisplay.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.pets_outlined, size: 80, color: Colors.grey[300]),
+                const SizedBox(height: 16),
+                Text(
+                  _searchQuery.isNotEmpty 
+                      ? 'No pets found matching your search criteria.' 
+                      : 'No pets available in this category.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                if (_searchQuery.isEmpty)
+                  const Text(
+                    'Try another category or check back later.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+              ],
+            ),
+          );
+        }
+        
+        // 6. Build the grid with the filtered results
+        return _buildFilteredGrid(isTablet, petsToDisplay);
+      },
+    );
+  }
+
+  // Helper widget to reduce redundancy in _buildPetGrid
+  Widget _buildFilteredGrid(bool isTablet, List<Map<String, dynamic>> pets, {bool isFallback = false}) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -509,12 +906,13 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.8,
       ),
-      itemCount: _pets.length,
+      itemCount: pets.length,
       itemBuilder: (context, index) {
-        return _buildPetCard(_pets[index]);
+        return _buildPetCard(pets[index]);
       },
     );
   }
+
 
   Widget _buildPetCard(Map<String, dynamic> pet) {
     return GestureDetector(
@@ -556,21 +954,44 @@ class _HomeScreenState extends State<HomeScreen> {
                         top: Radius.circular(20),
                       ),
                       child: Hero(
-                        tag: 'pet-${pet['name']}',
-                        child: Image.asset(
-                          pet['image'],
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.pets,
-                                size: 40,
-                                color: Colors.grey[300],
-                              ),
-                            );
-                          },
-                        ),
+                        tag: 'pet-${pet['id'] ?? pet['name']}',
+                        child: pet['imageBase64'] != null
+                            ? Image.memory(
+                                base64Decode(pet['imageBase64']),
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Icon(
+                                      Icons.pets,
+                                      size: 40,
+                                      color: Colors.grey[300],
+                                    ),
+                                  );
+                                },
+                              )
+                            : pet['image'] != null
+                                ? Image.asset(
+                                    pet['image'],
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                        child: Icon(
+                                          Icons.pets,
+                                          size: 40,
+                                          color: Colors.grey[300],
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Center(
+                                    child: Icon(
+                                      Icons.pets,
+                                      size: 40,
+                                      color: Colors.grey[300],
+                                    ),
+                                  ),
                       ),
                     ),
                   ),
@@ -702,7 +1123,7 @@ class _HomeScreenState extends State<HomeScreen> {
           showUnselectedLabels: false,
           elevation: 0,
           currentIndex: 0,
-           onTap: (index) {
+            onTap: (index) {
           
         switch (index) {
             case 0:
@@ -733,14 +1154,14 @@ class _HomeScreenState extends State<HomeScreen> {
               );
               break;
             case 4:
-             Navigator.pushReplacement(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) =>   const ProfileScreen(),
                 ),
               );
               break;
-          }
+            }
         },
           items: const [
             BottomNavigationBarItem(
@@ -768,4 +1189,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
+} 
