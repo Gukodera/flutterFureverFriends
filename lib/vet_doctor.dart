@@ -5,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 // [GLOBAL STATE SIMULATION]
-Map<String, dynamic>? globalActiveTeleconsult;
+final ValueNotifier<Map<String, dynamic>?> globalActiveTeleconsult = ValueNotifier(null);
 
 class VetClinicScreen extends StatefulWidget {
   const VetClinicScreen({super.key});
@@ -108,11 +108,19 @@ class _VetClinicScreenState extends State<VetClinicScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Active Appointment Monitor
-                  if (globalActiveTeleconsult != null) ...[
-                    _buildActiveAppointmentCard(context),
-                    const SizedBox(height: 24),
-                  ],
+                  // Active Appointment Monitor (Listens for real-time updates)
+                  ValueListenableBuilder<Map<String, dynamic>?>(
+                    valueListenable: globalActiveTeleconsult,
+                    builder: (context, activeConsult, _) {
+                      if (activeConsult == null) return const SizedBox.shrink();
+                      return Column(
+                        children: [
+                          _buildActiveAppointmentCard(context, activeConsult),
+                          const SizedBox(height: 24),
+                        ],
+                      );
+                    },
+                  ),
 
                   Row(
                     children: [
@@ -172,9 +180,9 @@ class _VetClinicScreenState extends State<VetClinicScreen> {
     );
   }
 
-  Widget _buildActiveAppointmentCard(BuildContext context) {
-    final vet = globalActiveTeleconsult?['vet'] ?? 'Vet Doctor';
-    final time = globalActiveTeleconsult?['time'] ?? 'Today';
+  Widget _buildActiveAppointmentCard(BuildContext context, Map<String, dynamic> activeConsult) {
+    final vet = activeConsult['vet'] ?? 'Vet Doctor';
+    final time = activeConsult['time'] ?? 'Today';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -197,7 +205,7 @@ class _VetClinicScreenState extends State<VetClinicScreen> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close, size: 16, color: Colors.grey),
-                onPressed: () => setState(() => globalActiveTeleconsult = null),
+                onPressed: () => globalActiveTeleconsult.value = null,
               ),
             ],
           ),
@@ -1010,7 +1018,7 @@ class VetSuccessScreen extends StatelessWidget {
     final String refNum = 'REF-${DateTime.now().year}${DateTime.now().month}${DateTime.now().day}-${(100 + (DateTime.now().second * 7)).toString()}';
     
     if (bookingDetails != null && (bookingDetails!['type'] == 'Teleconsultation' || isUrgent)) {
-      globalActiveTeleconsult = bookingDetails;
+      globalActiveTeleconsult.value = bookingDetails;
     }
 
     return Scaffold(
@@ -1298,7 +1306,17 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                 _buildCallControl(
                   icon: Icons.call_end,
                   onTap: () {
-                    // [BUG FIX] When ending call, go back to dashboard safely
+                    // [FEATURE] Clear active consultation and show feedback
+                    globalActiveTeleconsult.value = null;
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ended Call'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+
                     if (Navigator.canPop(context)) {
                       Navigator.pop(context);
                     } else {

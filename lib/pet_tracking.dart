@@ -210,12 +210,7 @@ class _RegisterCollarScreenState extends State<RegisterCollarScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SubscriptionPlanScreen(
-              pet: petData,
-              onSuccess: () {
-                // Just for state update if needed
-              },
-            ),
+            builder: (context) => DeviceDetectionScreen(pet: petData),
           ),
         );
       }
@@ -325,11 +320,155 @@ class _RegisterCollarScreenState extends State<RegisterCollarScreen> {
                   ),
                   child: _isUploading 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Register & Subscribe', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    : const Text('Register Collar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class DeviceDetectionScreen extends StatefulWidget {
+  final Map<String, dynamic> pet;
+  const DeviceDetectionScreen({super.key, required this.pet});
+
+  @override
+  State<DeviceDetectionScreen> createState() => _DeviceDetectionScreenState();
+}
+
+class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _rotateController;
+  bool _isDetected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat();
+    _rotateController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
+
+    // Simulate detection process
+    Timer(const Duration(milliseconds: 3000), () {
+      if (mounted) {
+        setState(() => _isDetected = true);
+        _pulseController.stop();
+        _rotateController.stop();
+        
+        // Return to pet selection after success message
+        Timer(const Duration(milliseconds: 2000), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _rotateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                if (!_isDetected) ...List.generate(3, (index) {
+                  return AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      double progress = (_pulseController.value + (index * 0.33)) % 1.0;
+                      double curvedValue = Curves.easeInOut.transform(progress);
+                      return Container(
+                        width: 100 + (curvedValue * 150),
+                        height: 100 + (curvedValue * 150),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, 
+                          border: Border.all(
+                            color: const Color(0xFF4A9B8E).withOpacity((1.0 - curvedValue) * 0.6), 
+                            width: 1.2,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
+                if (!_isDetected) RotationTransition(
+                  turns: _rotateController,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle, 
+                      gradient: SweepGradient(
+                        colors: [
+                          const Color(0xFF4A9B8E).withOpacity(0.0), 
+                          const Color(0xFF4A9B8E).withOpacity(0.2),
+                        ], 
+                        stops: const [0.5, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: _isDetected ? Colors.green.withOpacity(0.1) : Colors.white, 
+                    shape: BoxShape.circle,
+                    border: _isDetected ? Border.all(color: Colors.green, width: 2) : null,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        (widget.pet['imageBase64'] != null)
+                            ? (widget.pet['imageBase64']!.startsWith('http') 
+                                ? Image.network(widget.pet['imageBase64'], width: 100, height: 100, fit: BoxFit.cover)
+                                : Image.memory(base64Decode(widget.pet['imageBase64']), width: 100, height: 100, fit: BoxFit.cover))
+                            : Container(width: 100, height: 100, color: const Color(0xFF4A9B8E).withOpacity(0.1), child: const Icon(Icons.pets, size: 50, color: Color(0xFF4A9B8E))),
+                        if (_isDetected)
+                          Container(
+                            width: 100,
+                            height: 100,
+                            color: Colors.green.withOpacity(0.3),
+                            child: const Icon(Icons.check, color: Colors.white, size: 60),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 60),
+            Text(
+              _isDetected ? 'Device Detected!' : 'Detecting device...', 
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _isDetected 
+                ? 'Collar ID: ${widget.pet['collarId']} Verified' 
+                : 'Searching for collar ${widget.pet['collarId']} nearby', 
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 48),
+            if (!_isDetected) const CircularProgressIndicator(color: Color(0xFF4A9B8E), strokeWidth: 2),
+            if (_isDetected) const Text('Proceeding to setup...', style: TextStyle(color: Color(0xFF4A9B8E), fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     );
@@ -351,8 +490,8 @@ class _PetTrackingLoadingScreenState extends State<PetTrackingLoadingScreen> wit
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
-    _rotateController = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat();
+    _rotateController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
 
     Timer(const Duration(milliseconds: 3500), () {
       if (mounted) {
@@ -384,10 +523,18 @@ class _PetTrackingLoadingScreenState extends State<PetTrackingLoadingScreen> wit
                     animation: _pulseController,
                     builder: (context, child) {
                       double progress = (_pulseController.value + (index * 0.33)) % 1.0;
+                      // Use a curve for a smoother, steadier expansion
+                      double curvedValue = Curves.easeInOut.transform(progress);
                       return Container(
-                        width: 100 + (progress * 200),
-                        height: 100 + (progress * 200),
-                        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4A9B8E).withOpacity(1.0 - progress), width: 2)),
+                        width: 100 + (curvedValue * 150),
+                        height: 100 + (curvedValue * 150),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, 
+                          border: Border.all(
+                            color: const Color(0xFF4A9B8E).withOpacity((1.0 - curvedValue) * 0.6), 
+                            width: 1.2,
+                          ),
+                        ),
                       );
                     },
                   );
@@ -397,7 +544,16 @@ class _PetTrackingLoadingScreenState extends State<PetTrackingLoadingScreen> wit
                   child: Container(
                     width: 200,
                     height: 200,
-                    decoration: BoxDecoration(shape: BoxShape.circle, gradient: SweepGradient(colors: [const Color(0xFF4A9B8E).withOpacity(0.0), const Color(0xFF4A9B8E).withOpacity(0.5)], stops: const [0.75, 1.0])),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle, 
+                      gradient: SweepGradient(
+                        colors: [
+                          const Color(0xFF4A9B8E).withOpacity(0.0), 
+                          const Color(0xFF4A9B8E).withOpacity(0.2),
+                        ], 
+                        stops: const [0.5, 1.0],
+                      ),
+                    ),
                   ),
                 ),
                 Container(
@@ -419,7 +575,7 @@ class _PetTrackingLoadingScreenState extends State<PetTrackingLoadingScreen> wit
             const SizedBox(height: 12),
             Text('Connecting to ${widget.pet['name']}\'s collar GPS', style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 48),
-            const SizedBox(width: 40, height: 40, child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A9B8E)))),
+            // Removed redundant CircularProgressIndicator for a steadier feel
           ],
         ),
       ),

@@ -573,9 +573,9 @@ class BreederDashboard extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('Unlock exclusive features and grow your business.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
-            _buildPlanCard('Standard', 'Free', ['10 Pet Listings', 'Standard Visibility', 'Basic Support'], false),
+            _buildPlanCard('Standard', 'Free', ['1 Pet Listings', 'Standard Visibility', 'Basic Support'], false),
             const SizedBox(height: 16),
-            _buildPlanCard('Pro Breeder', '₱499/mo', ['Unlimited Listings', 'Featured Badge', 'Direct Chat Priority', 'Analytics Dashboard'], true),
+            _buildPlanCard('Pro Breeder', '₱499/mo', ['3 Pet Listings', 'Featured Badge', 'Direct Chat Priority', 'Analytics Dashboard'], true),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
