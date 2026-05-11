@@ -8,6 +8,8 @@ import 'favorite.dart';
 import 'pet_data.dart';
 import 'firebase_service.dart';
 import 'dart:convert';
+import 'vet_doctor.dart';
+import 'breeder_marketplace.dart';
 
 class PetsScreen extends StatefulWidget {
   final List<Map<String, dynamic>> pets;
@@ -69,6 +71,7 @@ class _PetsScreenState extends State<PetsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(context),
+      drawer: _buildDrawer(context),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
         child: Column(
@@ -141,15 +144,17 @@ class _PetsScreenState extends State<PetsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu, size: 28, color: Colors.black87),
-                onPressed: () {
-                  // keep same behavior as HomeScreen (no change)
-                },
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, size: 28, color: Colors.black87),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
               ),
               const Spacer(),
               const Text(
-                'Pets',
+                'Available To Adopt',
                 style: TextStyle(
                   fontSize: 18,
                   color: Colors.black87,
@@ -178,6 +183,106 @@ class _PetsScreenState extends State<PetsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: Color(0xFF4A9B8E),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.pets, size: 48, color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    'Furever Friends',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildDrawerItem(
+            icon: Icons.local_hospital_outlined,
+            title: 'Vet Clinic',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const VetClinicScreen()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.pets_outlined,
+            title: 'Breeder Marketplace',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BreederMarketplaceHome()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.shopping_bag_outlined,
+            title: 'Pet Shop',
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Pet Shop is under development!'), backgroundColor: Color(0xFF4A9B8E)),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.content_cut_outlined,
+            title: 'Grooming',
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Grooming Services are under development!'), backgroundColor: Color(0xFF4A9B8E)),
+              );
+            },
+          ),
+          const Divider(),
+          _buildDrawerItem(
+            icon: Icons.info_outline,
+            title: 'About Us',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsScreen()));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF4A9B8E)),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 
@@ -487,6 +592,118 @@ class _PetsScreenState extends State<PetsScreen> {
             BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class AboutUsScreen extends StatelessWidget {
+  const AboutUsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('About Us'),
+        backgroundColor: const Color(0xFF4A9B8E),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  const Icon(Icons.pets, size: 80, color: Color(0xFF4A9B8E)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Furever Friends',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF4A9B8E)),
+                  ),
+                  Text(
+                    'Connecting Hearts, One Paw at a Time',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
+            const Text(
+              'Our Mission',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'At Furever Friends, we believe every pet deserves a loving home and every owner deserves professional support. Our platform bridges the gap between responsible breeders, veterinary services, and passionate pet lovers in Panabo City and beyond.',
+              style: TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'What We Offer',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildFeatureItem(Icons.verified_user, 'Verified Breeders', 'Ensuring ethical and healthy breeding standards.'),
+            _buildFeatureItem(Icons.local_hospital, 'Professional Vet Care', 'Connecting you with the best clinics and 1v1 teleconsultations.'),
+            _buildFeatureItem(Icons.favorite, 'Adoption Center', 'Finding perfect homes for pets in need.'),
+            const SizedBox(height: 40),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A9B8E).withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF4A9B8E).withOpacity(0.2)),
+              ),
+              child: Column(
+                children: const [
+                  Text(
+                    'Version 1.0.0',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4A9B8E)),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Developed with ❤️ for the Pet Community of Panabo City.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFF4A9B8E).withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: const Color(0xFF4A9B8E), size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(desc, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
