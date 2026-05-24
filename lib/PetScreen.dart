@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               gradient: const LinearGradient(
-                colors: [Color(0xFF4A9B8E), Color(0xFF2D9E8E)],
+                colors: [Color(0xFF4A9B8E), Color(0xFF4A9B8E)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -353,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF2D9E8E),
+                          foregroundColor: const Color(0xFF4A9B8E),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

@@ -720,7 +720,7 @@ class _AdminPanelState extends State<AdminPanel> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'The pet $petName has been successfully $action.',
+                    'The Pet $petName has been successfully $action.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,

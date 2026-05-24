@@ -84,12 +84,12 @@ class _RegisterPageState extends State<RegisterPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D9E8E).withOpacity(0.1),
+                color: const Color(0xFF4A9B8E).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle,
-                color: Color(0xFF2D9E8E),
+                color: Color(0xFF4A9B8E),
                 size: 60,
               ),
             ),
@@ -121,7 +121,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Navigator.of(context).pop(); // Go back to login page
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D9E8E),
+                backgroundColor: const Color(0xFF4A9B8E),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -177,7 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
               child: const Text(
                 'Okay',
                 style: TextStyle(
-                  color: Color(0xFF2D9E8E),
+                  color: Color(0xFF4A9B8E),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -191,7 +191,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EFE7),
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -216,7 +216,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D9E8E),
+                    color: const Color(0xFF4A9B8E),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: ClipRRect(
@@ -362,7 +362,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ElevatedButton(
                 onPressed: isLoading ? null : registerUser,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D9E8E),
+                  backgroundColor: const Color(0xFF4A9B8E),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -410,7 +410,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: const Text(
                       'Login',
                       style: TextStyle(
-                        color: Color(0xFF2D9E8E),
+                        color: Color(0xFF4A9B8E),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),

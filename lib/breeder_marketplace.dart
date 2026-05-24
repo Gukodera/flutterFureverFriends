@@ -408,16 +408,84 @@ class BreederProfileScreen extends StatelessWidget {
       bottomSheet: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
-        child: SizedBox(
-          width: double.infinity,
-          height: 60,
-          child: ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
-            label: const Text('Inquire Now', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            style: ElevatedButton.styleFrom(backgroundColor: kMarketPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 60,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showStaticActionDialog(context, 'Contact Breeder', 'Start a conversation with ${breeder.name} regarding their services.'),
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                  label: const Text('Contact', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kMarketPrimary,
+                    side: const BorderSide(color: kMarketPrimary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 60,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showStaticActionDialog(context, 'Request Booking', 'Schedule a consultation or visit with ${breeder.name}.'),
+                  icon: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 18),
+                  label: const Text('Request Book', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kMarketPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _showStaticActionDialog(BuildContext context, String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: kMarketPrimary.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(title.contains('Contact') ? Icons.message_rounded : Icons.event_available_rounded, color: kMarketPrimary, size: 40),
+            ),
+            const SizedBox(height: 20),
+            Text(content, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+            const SizedBox(height: 12),
+            const Text('Note: This is a static preview of the feature.', style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Request sent to ${breeder.name}!'),
+                  backgroundColor: kMarketPrimary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: kMarketPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -708,6 +776,22 @@ class PetDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  const Text('Quick Actions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  _buildStaticQuickAction(
+                    context,
+                    Icons.chat_bubble_outline_rounded,
+                    'Contact Breeder',
+                    'Ask questions about this pet',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStaticQuickAction(
+                    context,
+                    Icons.calendar_today_rounded,
+                    'Request a Book',
+                    'Schedule a viewing or reservation',
+                  ),
                   const SizedBox(height: 120),
                 ],
               ),
@@ -724,7 +808,7 @@ class PetDetailScreen extends StatelessWidget {
               child: SizedBox(
                 height: 60,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () => _showStaticActionDialog(context, 'Contact Breeder', 'Send a message to the breeder about ${pet.name}.'),
                   style: OutlinedButton.styleFrom(side: const BorderSide(color: kMarketPrimary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
                   child: const Text('Contact Breeder', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kMarketPrimary)),
                 ),
@@ -735,7 +819,7 @@ class PetDetailScreen extends StatelessWidget {
               child: SizedBox(
                 height: 60,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => _showStaticActionDialog(context, 'Request Booking', 'Reserve a slot to visit ${pet.name} and meet the breeder.'),
                   style: ElevatedButton.styleFrom(backgroundColor: kMarketPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
                   child: const Text('Request Booking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
@@ -743,6 +827,84 @@ class PetDetailScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStaticQuickAction(BuildContext context, IconData icon, String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: kMarketPrimary.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: kMarketPrimary, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showStaticActionDialog(context, title, 'This is a static preview for "$title".'),
+            child: const Text('Open'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStaticActionDialog(BuildContext context, String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: kMarketPrimary.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(title.contains('Contact') ? Icons.message_rounded : Icons.event_available_rounded, color: kMarketPrimary, size: 40),
+            ),
+            const SizedBox(height: 20),
+            Text(content, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+            const SizedBox(height: 12),
+            const Text('Note: This is a static preview of the feature.', style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Request for $title sent successfully!'),
+                  backgroundColor: kMarketPrimary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: kMarketPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

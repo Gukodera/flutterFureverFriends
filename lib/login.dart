@@ -4,6 +4,7 @@ import 'auth_service.dart';
 import 'firebase_service.dart';
 import 'petScreen.dart'; 
 import 'register.dart'; // Import your RegisterPage
+import 'choice_after_login.dart'; // New post-login choice screen
 
 class LoginPage extends StatefulWidget {
   final bool showSuccessMessage;
@@ -109,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  MaterialPageRoute(builder: (context) => const ChoiceAfterLoginPage()),
                 );
               }
             });
@@ -190,7 +191,7 @@ class _LoginPageState extends State<LoginPage> {
         // Navigate to HomeScreen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const ChoiceAfterLoginPage()),
         );
       }
     } catch (e) {
@@ -215,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
         // Navigate to HomeScreen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const ChoiceAfterLoginPage()),
         );
       }
     } catch (e) {
@@ -261,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
               child: const Text(
                 'Okay',
                 style: TextStyle(
-                  color: Color(0xFF2D9E8E),
+                  color: Color(0xFF4A9B8E),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -275,7 +276,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EFE7),
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -290,7 +291,7 @@ class _LoginPageState extends State<LoginPage> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D9E8E),
+                    color: const Color(0xFF4A9B8E),
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: ClipRRect(
@@ -411,7 +412,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text(
                     'Forgot Password?',
                     style: TextStyle(
-                      color: Color(0xFF2D9E8E),
+                      color: Color(0xFF4A9B8E),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -425,7 +426,7 @@ class _LoginPageState extends State<LoginPage> {
               ElevatedButton(
                 onPressed: isLoading ? null : loginUser,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D9E8E),
+                  backgroundColor: const Color(0xFF4A9B8E),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -579,7 +580,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Text(
                       'Sign Up',
                       style: TextStyle(
-                        color: Color(0xFF2D9E8E),
+                        color: Color(0xFF4A9B8E),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
